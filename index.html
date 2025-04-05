@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debt Blaster</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            font-family: 'Press Start 2P', cursive;
+            color: #91D3D0;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: 0 auto;
+            background-color: #000;
+        }
+        
+        #gameCanvas {
+            background-color: #000;
+            display: block;
+        }
+        
+        #introScreen, #nameInputScreen, #endScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 10;
+        }
+        
+        #introVideo {
+            max-width: 100%;
+            max-height: 80%;
+            object-fit: contain;
+        }
+        
+        .skipPrompt {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #91D3D0;
+            position: absolute;
+            bottom: 100px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        
+        #nameInput {
+            margin-top: 20px;
+            padding: 10px;
+            font-family: 'Press Start 2P', cursive;
+            background-color: #000;
+            color: #91D3D0;
+            border: 2px solid #91D3D0;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border: 2px solid #91D3D0;
+            border-radius: 5px;
+            z-index: 5;
+            font-size: 14px;
+        }
+        
+        #debtCounter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        
+        #playerShip {
+            position: absolute;
+            transition: transform 0.1s;
+        }
+        
+        .enemy, .powerup, .bullet {
+            position: absolute;
+        }
+        
+        #endContent {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border: 4px solid #91D3D0;
+            border-radius: 10px;
+            max-width: 80%;
+            text-align: center;
+        }
+        
+        #endMessage {
+            font-size: 28px;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        #gameStats {
+            font-size: 20px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .playAgainPrompt {
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        #copyButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', cursive;
+            background-color: #91D3D0;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        #tweetButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', cursive;
+            background-color: #1DA1F2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        #copyButton:hover {
+            background-color: #7abeb8;
+        }
+        
+        #tweetButton:hover {
+            background-color: #1991db;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="introScreen">
+            <video id="introVideo" autoplay loop muted playsinline>
+                <source src="assets/intro_background.mp4" type="video/mp4">
+            </video>
+            <div class="skipPrompt">Press SPACE to Skip</div>
+        </div>
+        
+        <div id="nameInputScreen" style="display: none;">
+            <div>Enter your name, Seedizen:</div>
+            <input type="text" id="nameInput" maxlength="20">
+        </div>
+        
+        <div id="endScreen" style="display: none;">
+            <div id="endContent">
+                <div id="endMessage"></div>
+                <div id="gameStats"></div>
+                <button id="copyButton">COPY SCORE TO CLIPBOARD</button>
+                <button id="tweetButton">SHARE ON TWITTER</button>
+                <div class="playAgainPrompt">Press Enter to Play Again</div>
+            </div>
+        </div>
+        
+        <div id="debtCounter">Debt: $1000</div>
+    </div>
+
+    <audio id="backgroundMusic" loop>
+        <source src="assets/background_music.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="introNarration">
+        <source src="assets/intro_narration.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bulletSound">
+        <source src="assets/bullet_shot.wav" type="audio/wav">
+    </audio>
+    <audio id="hitSound">
+        <source src="assets/hit.wav" type="audio/wav">
+    </audio>
+    <audio id="powerupSound">
+        <source src="assets/powerup.wav" type="audio/wav">
+    </audio>
+    <audio id="penaltySound">
+        <source src="assets/penalty.wav" type="audio/wav">
+    </audio>
+    <audio id="porSound">
+        <source src="assets/por_collect.wav" type="audio/wav">
+    </audio>
+
+    <script>
+        // Game constants
+        const WIDTH = 800;
+        const HEIGHT = 600;
+        const PLAYER_SPEED = 5;
+        const BULLET_SPEED = 15;
+        const ENEMY_SPEED = 2;
+        const POWERUP_SPEED = 3;
+        const POR_DURATION = 15000; // 15 seconds
+        
+        // Game variables
+        let canvas, ctx;
+        let playerX, playerY, playerWidth = 60, playerHeight = 40;
+        let debt = 1000;
+        let gameActive = false;
+        let startTime = 0;
+        let playerName = "";
+        let porActive = false;
+        let porTimer = 0;
+        let enemySpeed = ENEMY_SPEED;
+        let enemySpawnRate = 100;
+        let enemyTimer = 0;
+        let difficultyIncreaseInterval;
+        
+        // Game objects
+        let enemies = [];
+        let bullets = [];
+        let superseeds = [];
+        let loansharks = [];
+        let pors = [];
+        let notifications = [];
+        
+        // DOM elements
+        let introScreen, nameInputScreen, endScreen, nameInput, debtCounter;
+        let endMessage, gameStats, copyButton, tweetButton;
+        let introVideo, backgroundMusic, introNarration, bulletSound, hitSound, powerupSound, penaltySound, porSound;
+        
+        // Images
+        let playerImg = new Image();
+        let enemyImg = new Image();
+        let superseedImg = new Image();
+        let loansharkImg = new Image();
+        let bulletImg = new Image();
+        let porImg = new Image();
+        let backgroundImg = new Image();
+        let endBgImg = new Image();
+        
+        // Load assets
+        function loadAssets() {
+            playerImg.src = 'assets/spaceship.png';
+            enemyImg.src = 'assets/moneybag.png';
+            superseedImg.src = 'assets/superseed.png';
+            loansharkImg.src = 'assets/loanshark.png';
+            bulletImg.src = 'assets/bullet.png';
+            porImg.src = 'assets/por.png';
+            backgroundImg.src = 'assets/background.png';
+            endBgImg.src = 'assets/end_background.png';
+            
+            // Set fallback dimensions
+            playerImg.onerror = () => { playerWidth = 60; playerHeight = 40; };
+            enemyImg.onerror = () => {};
+            superseedImg.onerror = () => {};
+            loansharkImg.onerror = () => {};
+            bulletImg.onerror = () => {};
+            porImg.onerror = () => {};
+            backgroundImg.onerror = () => {};
+            endBgImg.onerror = () => {};
+        }
+        
+        // Initialize game
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Get DOM elements
+            introScreen = document.getElementById('introScreen');
+            nameInputScreen = document.getElementById('nameInputScreen');
+            endScreen = document.getElementById('endScreen');
+            nameInput = document.getElementById('nameInput');
+            debtCounter = document.getElementById('debtCounter');
+            endMessage = document.getElementById('endMessage');
+            gameStats = document.getElementById('gameStats');
+            copyButton = document.getElementById('copyButton');
+            tweetButton = document.getElementById('tweetButton');
+            introVideo = document.getElementById('introVideo');
+            
+            // Audio elements
+            backgroundMusic = document.getElementById('backgroundMusic');
+            introNarration = document.getElementById('introNarration');
+            bulletSound = document.getElementById('bulletSound');
+            hitSound = document.getElementById('hitSound');
+            powerupSound = document.getElementById('powerupSound');
+            penaltySound = document.getElementById('penaltySound');
+            porSound = document.getElementById('porSound');
+            
+            // Set up event listeners
+            copyButton.addEventListener('click', copyScoreToClipboard);
+            tweetButton.addEventListener('click', shareOnTwitter);
+            
+            // Load assets
+            loadAssets();
+            
+            // Set up event listeners
+            document.addEventListener('keydown', handleKeyDown);
+            nameInput.addEventListener('keypress', handleNameInput);
+            
+            // Start with intro screen
+            showIntro();
+        }
+        
+        // Show intro screen
+        function showIntro() {
+            introScreen.style.display = 'flex';
+            try {
+                // Sync narration with intro screen
+                introNarration.currentTime = 0;
+                introNarration.play().catch(e => {
+                    console.log("Autoplay prevented:", e);
+                    // Show a button to start audio if autoplay is blocked
+                    const playButton = document.createElement('div');
+                    playButton.textContent = "CLICK TO START GAME";
+                    playButton.style.position = 'absolute';
+                    playButton.style.bottom = '100px';
+                    playButton.style.cursor = 'pointer';
+                    playButton.style.padding = '10px 20px';
+                    playButton.style.backgroundColor = '#91D3D0';
+                    playButton.style.color = '#000';
+                    playButton.style.borderRadius = '5px';
+                    playButton.addEventListener('click', () => {
+                        introNarration.play();
+                        playButton.remove();
+                    });
+                    introScreen.appendChild(playButton);
+                });
+                
+                // Ensure video plays
+                introVideo.play().catch(e => console.log("Video play error:", e));
+            } catch (e) {
+                console.log("Couldn't play narration:", e);
+            }
+        }
+        
+        // Handle key down events
+        function handleKeyDown(e) {
+            if (e.key === ' ' && introScreen.style.display === 'flex') {
+                // Skip intro
+                skipIntro();
+            } else if (e.key === 'Enter' && endScreen.style.display === 'flex') {
+                // Play again
+                restartGame();
+            } else if (e.key === ' ' && gameActive) {
+                // Shoot bullets
+                shoot();
+            }
+        }
+        
+        // Skip intro
+        function skipIntro() {
+            const introVideo = document.getElementById('introVideo');
+            introVideo.pause();
+            introScreen.style.display = 'none';
+            introNarration.pause();
+            showNameInput();
+        }
+        
+        // Handle name input
+        function handleNameInput(e) {
+            if (e.key === 'Enter') {
+                playerName = nameInput.value || "Seedizen";
+                nameInputScreen.style.display = 'none';
+                startGame();
+            }
+        }
+        
+        // Show name input screen
+        function showNameInput() {
+            nameInputScreen.style.display = 'flex';
+            nameInput.focus();
+        }
+        
+        // Start the game
+        function startGame() {
+            playerX = WIDTH / 2 - playerWidth / 2;
+            playerY = HEIGHT - playerHeight - 70;
+            gameActive = true;
+            startTime = Date.now();
+            
+            try {
+                backgroundMusic.volume = 0.5;
+                backgroundMusic.play().catch(e => console.log("Background music play error:", e));
+            } catch (e) {
+                console.log("Couldn't play background music:", e);
+            }
+            
+            // Start difficulty increase
+            difficultyIncreaseInterval = setInterval(increaseDifficulty, 30000); // Every 30 seconds
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            update();
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Update game state
+        function update() {
+            // Player movement
+            if (keys['ArrowLeft'] && playerX > 0) {
+                playerX -= PLAYER_SPEED;
+            }
+            if (keys['ArrowRight'] && playerX < WIDTH - playerWidth) {
+                playerX += PLAYER_SPEED;
+            }
+            
+            // Spawn enemies and power-ups
+            enemyTimer++;
+            if (enemyTimer >= enemySpawnRate) {
+                spawnEnemy();
+                if (Math.random() < 0.1) spawnSuperseed();
+                if (Math.random() < 0.15) spawnLoanshark();
+                if (Math.random() < 0.05) spawnPor();
+                enemyTimer = 0;
+            }
+            
+            // Update POR timer
+            if (porActive && Date.now() - porTimer >= POR_DURATION) {
+                porActive = false;
+                addNotification("POR power-up expired");
+            }
+            
+            // Update bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                if (bullets[i].angle) {
+                    // Handle angled bullets
+                    const angleRad = bullets[i].angle * (Math.PI / 180);
+                    bullets[i].x += Math.sin(angleRad) * BULLET_SPEED;
+                    bullets[i].y -= Math.cos(angleRad) * BULLET_SPEED;
+                } else {
+                    // Straight bullets
+                    bullets[i].y -= BULLET_SPEED;
+                }
+                
+                if (bullets[i].y < 0 || bullets[i].x < 0 || bullets[i].x > WIDTH) {
+                    bullets.splice(i, 1);
+                }
+            }
+            
+            // Update enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].y += enemies[i].speed;
+                if (enemies[i].y > HEIGHT) {
+                    enemies.splice(i, 1);
+                }
+            }
+            
+            // Update power-ups
+            updatePowerups(superseeds);
+            updatePowerups(loansharks);
+            updatePowerups(pors);
+            
+            // Update notifications
+            for (let i = notifications.length - 1; i >= 0; i--) {
+                if (Date.now() - notifications[i].startTime > notifications[i].duration) {
+                    notifications.splice(i, 1);
+                }
+            }
+            
+            // Check collisions
+            checkCollisions();
+            
+            // Check win condition
+            if (debt <= 0) {
+                debt = 0;
+                endGame(true);
+            }
+            
+            // Update debt counter
+            debtCounter.textContent = `Debt: $${debt}`;
+        }
+        
+        // Update powerups
+        function updatePowerups(powerups) {
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                powerups[i].y += powerups[i].speed;
+                if (powerups[i].y > HEIGHT) {
+                    powerups.splice(i, 1);
+                }
+            }
+        }
+        
+        // Check collisions
+        function checkCollisions() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                const bulletRect = {
+                    x: bullet.x,
+                    y: bullet.y,
+                    width: 5,
+                    height: 10
+                };
+                
+                // Check enemy collisions
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    const enemyRect = {
+                        x: enemy.x,
+                        y: enemy.y,
+                        width: 40,
+                        height: 40
+                    };
+                    
+                    if (checkCollision(bulletRect, enemyRect)) {
+                        debt -= 10;
+                        enemies.splice(j, 1);
+                        bullets.splice(i, 1);
+                        try { hitSound.play(); } catch (e) {}
+                        break;
+                    }
+                }
+                
+                // Check superseed collisions (reduced debt by 1%)
+                for (let j = superseeds.length - 1; j >= 0; j--) {
+                    const seed = superseeds[j];
+                    const seedRect = {
+                        x: seed.x,
+                        y: seed.y,
+                        width: 50,
+                        height: 50
+                    };
+                    
+                    if (checkCollision(bulletRect, seedRect)) {
+                        debt = Math.ceil(debt * 0.99); // 1% reduction
+                        superseeds.splice(j, 1);
+                        bullets.splice(i, 1);
+                        try { powerupSound.play(); } catch (e) {}
+                        break;
+                    }
+                }
+                
+                // Check loanshark collisions
+                for (let j = loansharks.length - 1; j >= 0; j--) {
+                    const shark = loansharks[j];
+                    const sharkRect = {
+                        x: shark.x,
+                        y: shark.y,
+                        width: 50,
+                        height: 50
+                    };
+                    
+                    if (checkCollision(bulletRect, sharkRect)) {
+                        debt = Math.ceil(debt * 1.10);
+                        loansharks.splice(j, 1);
+                        bullets.splice(i, 1);
+                        addNotification("Loan shark increased your debt by 10%");
+                        try { penaltySound.play(); } catch (e) {}
+                        break;
+                    }
+                }
+                
+                // Check POR collisions (5% reduction and triple shot)
+                for (let j = pors.length - 1; j >= 0; j--) {
+                    const por = pors[j];
+                    const porRect = {
+                        x: por.x,
+                        y: por.y,
+                        width: 35,
+                        height: 35
+                    };
+                    
+                    if (checkCollision(bulletRect, porRect)) {
+                        debt = Math.ceil(debt * 0.95); // 5% reduction
+                        porActive = true;
+                        porTimer = Date.now();
+                        pors.splice(j, 1);
+                        bullets.splice(i, 1);
+                        addNotification("5% debt reduction + Triple Shot!");
+                        try { porSound.play(); } catch (e) {}
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Check collision between two rectangles
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+        
+        // Render game
+        function render() {
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            
+            // Draw background
+            if (backgroundImg.complete) {
+                ctx.drawImage(backgroundImg, 0, 0, WIDTH, HEIGHT);
+            }
+            
+            // Draw player
+            if (playerImg.complete) {
+                ctx.drawImage(playerImg, playerX, playerY, playerWidth, playerHeight);
+            } else {
+                ctx.fillStyle = '#0f0';
+                ctx.fillRect(playerX, playerY, playerWidth, playerHeight);
+            }
+            
+            // Draw bullets
+            bullets.forEach(bullet => {
+                if (bulletImg.complete) {
+                    ctx.drawImage(bulletImg, bullet.x, bullet.y, 5, 10);
+                } else {
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(bullet.x, bullet.y, 5, 10);
+                }
+            });
+            
+            // Draw enemies
+            enemies.forEach(enemy => {
+                if (enemyImg.complete) {
+                    ctx.drawImage(enemyImg, enemy.x, enemy.y, 40, 40);
+                } else {
+                    ctx.fillStyle = '#f00';
+                    ctx.fillRect(enemy.x, enemy.y, 40, 40);
+                }
+            });
+            
+            // Draw power-ups
+            superseeds.forEach(seed => {
+                if (superseedImg.complete) {
+                    ctx.drawImage(superseedImg, seed.x, seed.y, 50, 50);
+                } else {
+                    ctx.fillStyle = '#ff0';
+                    ctx.fillRect(seed.x, seed.y, 50, 50);
+                }
+            });
+            
+            loansharks.forEach(shark => {
+                if (loansharkImg.complete) {
+                    ctx.drawImage(loansharkImg, shark.x, shark.y, 50, 50);
+                } else {
+                    ctx.fillStyle = '#888';
+                    ctx.fillRect(shark.x, shark.y, 50, 50);
+                }
+            });
+            
+            pors.forEach(por => {
+                if (porImg.complete) {
+                    ctx.drawImage(porImg, por.x, por.y, 35, 35);
+                } else {
+                    ctx.fillStyle = '#800080';
+                    ctx.fillRect(por.x, por.y, 35, 35);
+                }
+            });
+            
+            // Draw notifications
+            notifications.forEach((notification, index) => {
+                // Set font and measure text
+                ctx.font = '16px "Press Start 2P", cursive';
+                ctx.textAlign = 'center';
+                const textMetrics = ctx.measureText(notification.text);
+                const textWidth = textMetrics.width;
+                const textHeight = 16; // Approximate font height
+                
+                // Calculate background dimensions with padding
+                const bgWidth = textWidth + 40; // 20px padding on each side
+                const bgHeight = 30;
+                
+                // Calculate positions
+                const bgX = WIDTH/2 - bgWidth/2;
+                const bgY = HEIGHT/2 + index * 40 - bgHeight/2;
+                const textY = HEIGHT/2 + index * 40 + textHeight/3; // Adjusted for perfect vertical centering
+                
+                // Draw background
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+                
+                // Draw text (now perfectly centered)
+                ctx.fillStyle = '#91D3D0';
+                ctx.fillText(notification.text, WIDTH/2, textY);
+            });
+            
+            // Reset text alignment
+            ctx.textAlign = 'left';
+        }
+        
+        // Spawn enemy
+        function spawnEnemy() {
+            enemies.push({
+                x: Math.random() * (WIDTH - 40),
+                y: -40,
+                speed: enemySpeed
+            });
+        }
+        
+        // Spawn superseed
+        function spawnSuperseed() {
+            superseeds.push({
+                x: Math.random() * (WIDTH - 50),
+                y: -50,
+                speed: POWERUP_SPEED
+            });
+        }
+        
+        // Spawn loanshark
+        function spawnLoanshark() {
+            loansharks.push({
+                x: Math.random() * (WIDTH - 50),
+                y: -50,
+                speed: enemySpeed * 1.5
+            });
+        }
+        
+        // Spawn POR
+        function spawnPor() {
+            pors.push({
+                x: Math.random() * (WIDTH - 35),
+                y: -35,
+                speed: 2.5
+            });
+        }
+        
+        // Shoot bullets
+        function shoot() {
+            if (porActive) {
+                // Triple shot - one straight and two at angles
+                bullets.push({ x: playerX + playerWidth/2 - 2.5, y: playerY, speed: BULLET_SPEED });
+                bullets.push({ x: playerX + playerWidth/2 - 2.5, y: playerY, speed: BULLET_SPEED, angle: -30 });
+                bullets.push({ x: playerX + playerWidth/2 - 2.5, y: playerY, speed: BULLET_SPEED, angle: 30 });
+            } else {
+                // Single shot
+                bullets.push({ x: playerX + playerWidth/2 - 2.5, y: playerY, speed: BULLET_SPEED });
+            }
+            
+            try { bulletSound.play(); } catch (e) {}
+            
+            if (!startTime) {
+                startTime = Date.now();
+            }
+        }
+        
+        // Add notification
+        function addNotification(text, duration = 3000) {
+            notifications.push({
+                text: text,
+                duration: duration,
+                startTime: Date.now()
+            });
+        }
+        
+        // Increase difficulty
+        function increaseDifficulty() {
+            enemySpeed += 0.5;
+            if (enemySpawnRate > 30) {
+                enemySpawnRate -= 5;
+            }
+            addNotification("Difficulty increased!");
+        }
+        
+        // Format time as MM:SS.mm
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const millis = Math.floor((seconds % 1) * 100);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${millis.toString().padStart(2, '0')}`;
+        }
+        
+        // Copy score to clipboard
+        function copyScoreToClipboard() {
+            const statsText = `Call me 'Debt Blaster' from now on. Cleared in ${formatTime((Date.now() - startTime) / 1000)}. @superseedxyz Seedzines on TOP! #Superseed_Debt_Blaster`;
+            navigator.clipboard.writeText(statsText).then(() => {
+                copyButton.textContent = "COPIED!";
+                setTimeout(() => {
+                    copyButton.textContent = "COPY SCORE TO CLIPBOARD";
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                copyButton.textContent = "ERROR COPYING";
+            });
+        }
+        
+        // Share on Twitter
+        function shareOnTwitter() {
+    const gameDuration = (Date.now() - startTime) / 1000;
+    const tweetText = encodeURIComponent(
+        `🚀 CALL ME "DEBT BLASTER" 🚀\n\n` +
+        `Cleared ${debt === 0 ? "ALL" : `$${debt}`} of my debt in just ${formatTime(gameDuration)}!\n\n` +
+        `@superseedxyz Seedzines on TOP!\n\n` +
+        `#Superseed_Debt_Blaster`
+    );
+    window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, '_blank');
+}
+        
+        // End game
+        function endGame(win) {
+            gameActive = false;
+            clearInterval(difficultyIncreaseInterval);
+            
+            const endTime = Date.now();
+            const gameDuration = (endTime - startTime) / 1000;
+            
+            try {
+                backgroundMusic.pause();
+            } catch (e) {}
+            
+            endScreen.style.display = 'flex';
+            endMessage.textContent = win ? `CONGRATULATIONS, ${playerName.toUpperCase()}!` : "GAME OVER";
+            endMessage.style.color = win ? "#91D3D0" : "#ff5555";
+            
+            gameStats.innerHTML = `
+                <div>YOUR SCORE:</div>
+                <div>${formatTime(gameDuration)}</div>
+                <div>FINAL DEBT: $${debt}</div>
+            `;
+            
+            // Draw end background
+            if (endBgImg.complete) {
+                ctx.drawImage(endBgImg, 0, 0, WIDTH, HEIGHT);
+            }
+        }
+        
+        // Restart game
+        function restartGame() {
+            endScreen.style.display = 'none';
+            resetGame();
+            startGame();
+        }
+        
+        // Reset game
+        function resetGame() {
+            debt = 1000;
+            gameActive = false;
+            startTime = 0;
+            porActive = false;
+            porTimer = 0;
+            enemySpeed = ENEMY_SPEED;
+            enemySpawnRate = 100;
+            enemyTimer = 0;
+            
+            enemies = [];
+            bullets = [];
+            superseeds = [];
+            loansharks = [];
+            pors = [];
+            notifications = [];
+            
+            playerX = WIDTH / 2 - playerWidth / 2;
+            playerY = HEIGHT - playerHeight - 70;
+        }
+        
+        // Keyboard state
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        // Start the game when window loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
