@@ -35,8 +35,13 @@ Debt Blaster is a retro-style arcade shooter where you play as a Seedizen on a m
 
 💥BEHIND THE BLAST
 🎮 Game Developer: BonDOn
+
 🐦 Twitter: @Crypto_0_0
+
 💬 Discord: @0x_don
+
 🏆 Created for: Superseed Grok3 Game Contest
+
 🤖 Vibe coded with: Grok 3 & Deepseek AI
+
 💥 Ready to blast your debt away? Play Now 👉 https://superseed-debt-blaster.netlify.app/
