@@ -9,22 +9,22 @@ Debt Blaster is a retro-style arcade shooter where you play as a Seedizen on a m
  🎯 How to Play  
 
    🕹️ Controls  
-  - ⬅️➡️ Arrow Keys: Move your spaceship  
-  - 🖱️ Space Bar: Fire bullets 
+    ⬅️➡️ Arrow Keys: Move your spaceship  
+     🖱️ Space Bar: Fire bullets 
 
    🎲 Game Elements  
 
-    👾  Debt Monsters ▶️ -$10 debt per hit |  
-    🌱  SuperSeed Token ▶️ -1% debt |  
+    👾  Debt Monsters ▶️ -$10 debt per hit 
+    🌱  SuperSeed Token ▶️ -1% debt 
     🦈  Loan Shark ▶️ +10% debt   
     ✨ POR Power-up ▶️ -5% debt + Triple Shot for 15s! 
 
 
  🔥 Features  
-✅ Progressive Difficulty – Enemies get faster and more frequent over time!  
-✅ Epic Power-ups – Triple shots, debt reductions, and more!  
-✅ Crispy Soundtrack – Retro vibes to keep you blasting! 🎶  
-✅ Social Sharing – Brag about your debt-free victory on X! 🐦  
+  ✅ Progressive Difficulty – Enemies get faster and more frequent over time!  
+  ✅ Epic Power-ups – Triple shots, debt reductions, and more!  
+  ✅ Crispy Soundtrack – Retro vibes to keep you blasting! 🎶  
+  ✅ Social Sharing – Brag about your debt-free victory on X! 🐦  
 
 
 
